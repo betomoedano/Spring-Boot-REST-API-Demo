@@ -61,4 +61,21 @@ class CashCardApplicationTests {
 		JSONArray page = documentContext.read("$[*]");
 		assertThat(page.size()).isEqualTo(1);
 	}
+
+	@Test
+	void shouldReturnAPageOfCashCardsSortedByAmount() {
+		ResponseEntity<String> response = restTemplate.getForEntity("/cashcards?page=0&size=3&sort=amount,desc", String.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+		DocumentContext documentContext = JsonPath.parse(response.getBody());
+		JSONArray page = documentContext.read("$[*]");
+		double amount0 = documentContext.read("$[0].amount"); //150
+		double amount1 = documentContext.read("$[1].amount"); //123.45
+		double amount2 = documentContext.read("$[2].amount"); //1
+
+		assertThat(page.size()).isEqualTo(3);
+		assertThat(amount0).isEqualTo(150);
+		assertThat(amount1).isEqualTo(123.45);
+		assertThat(amount2).isEqualTo(1);
+	}
 }
