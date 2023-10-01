@@ -17,8 +17,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
        httpSecurity
-               .authorizeHttpRequests(request -> request.requestMatchers("/cashcards/**")
-                       .authenticated())
+               .authorizeHttpRequests(request -> request
+                       .requestMatchers("/cashcards/**")
+                       .hasRole("CARD-OWNER"))
+                       //.authenticated())
                .csrf(csrf -> csrf.disable())
                .httpBasic(Customizer.withDefaults());
 
@@ -36,8 +38,15 @@ public class SecurityConfig {
         UserDetails sarah = users
                 .username("sarah1")
                 .password(passwordEncoder.encode("abc123"))
-                .roles()
+                .roles("CARD-OWNER")
                 .build();
-        return new InMemoryUserDetailsManager(sarah);
+
+        UserDetails hankOwnsNoCards = users
+                .username("hank-owns-no-cards")
+                .password(passwordEncoder.encode("qrs456"))
+                .roles("NON-OWNER")
+                .build();
+
+        return new InMemoryUserDetailsManager(sarah, hankOwnsNoCards);
     }
 }
