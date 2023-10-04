@@ -10,9 +10,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.function.DoubleConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -36,6 +38,8 @@ class CashCardApplicationTests {
 		Double amount = documentContext.read("$.amount");
 		assertThat(amount).isEqualTo(123.45);
 	}
+
+
 
 	@Test
 	void shouldNotReturnACashCardWithAnUnknownId() {
@@ -136,5 +140,28 @@ class CashCardApplicationTests {
 				.withBasicAuth("sarah1", "abc123")
 				.getForEntity("/cashcards/102", String.class); // kumar2's data
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	@Test
+	@DirtiesContext
+	void shouldCreateANewCashCard() {
+		CashCard newCashCard = new CashCard(null, 250.00, "sarah1");
+		ResponseEntity<Void> createResponse = restTemplate
+				.withBasicAuth("sarah1", "abc123")
+				.postForEntity("/cashcards", newCashCard, Void.class);
+		assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+		URI locationOfNewCashCard = createResponse.getHeaders().getLocation();
+		ResponseEntity<String> getResponse = restTemplate
+				.withBasicAuth("sarah1", "abc123")
+				.getForEntity(locationOfNewCashCard, String.class);
+		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+		DocumentContext documentContext = JsonPath.parse(getResponse.getBody());
+		Number id = documentContext.read(("$.id"));
+		Double amount = documentContext.read("$.amount");
+
+		assertThat(id).isNotNull();
+		assertThat(amount).isEqualTo(250.00);
 	}
 }
